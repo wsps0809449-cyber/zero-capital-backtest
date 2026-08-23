@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>0本金回測系統</title>
+<style>
+:root{--primary:#1a73e8;--bg:#f5f7fa;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;--danger:#ef4444;--success:#10b981;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;min-height:100vh}
+.header{background:var(--card);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600}
+.content{padding:16px;padding-bottom:90px}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.form-input,.form-select{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:16px;background:#fafafa}
+.form-row{display:flex;gap:10px}.form-row .form-group{flex:1}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:600;text-align:center;cursor:pointer}
+.btn-primary{background:var(--primary);color:#fff}.btn-secondary{background:#e5e7eb;color:var(--text)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--card);border-top:1px solid var(--border);display:flex;padding:8px 0 20px;z-index:100}
+.nav-item{flex:1;text-align:center;padding:6px 0;font-size:11px;color:var(--muted);background:none;border:none}
+.nav-item.active{color:var(--primary);font-weight:600}
+.nav-item .icon{font-size:22px;display:block;margin-bottom:2px}
+.page{display:none}.page.active{display:block}
+.cover{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:32px 24px;background:linear-gradient(160deg,#0d47a1,#1a73e8 60%,#42a5f5);color:#fff}
+.cover h1{font-size:28px;font-weight:700;margin-bottom:12px}
+.cover p{font-size:15px;opacity:.9;margin-bottom:40px;line-height:1.6}
+.cover .btn{max-width:260px;background:#fff;color:var(--primary)}
+.check-card{border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:#fff}
+.check-card.active{border-color:var(--primary);background:#f0f7ff}
+.check-header{display:flex;align-items:center;gap:10px;cursor:pointer}
+.check-header input{width:20px;height:20px;accent-color:var(--primary)}
+.check-body{display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.check-card.active .check-body{display:block}
+.formula-box{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:10px 12px;font-size:12px;color:#475569;margin-top:10px;font-family:ui-monospace,monospace;line-height:1.6;white-space:pre-wrap}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+.result-row .label{color:var(--muted)}.result-row .val{font-weight:600}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:#f8fafc;border-radius:10px;padding:12px;text-align:center}
+.metric .value{font-size:18px;font-weight:700;color:var(--primary)}
+.metric .label{font-size:12px;color:var(--muted);margin-top:2px}
+.alert{padding:12px;border-radius:10px;font-size:13px;margin-bottom:12px}
+.alert-info{background:#e0f2fe;color:#0c4a6e}
+.alert-danger{background:#fee2e2;color:#991b1b}
+.section-title{font-size:13px;color:var(--muted);margin:20px 0 8px;font-weight:500}
+</style>
+</head>
+<body>
+<div id="page-cover" class="page active">
+<div class="cover">
+<div style="font-size:48px;margin-bottom:16px">📊</div>
+<h1>0本金回測系統</h1>
+<p>本金／房貸／保單質押<br>配息組合回測與壓力測試</p>
+<button class="btn" onclick="showPage('funding')">開始設定</button>
+</div></div>
+
+<div id="page-funding" class="page">
+<div class="header"><button onclick="showPage('cover')" style="background:none;border:none;font-size:20px;color:var(--primary)">←</button><h1>資金來源</h1><span></span></div>
+<div class="content">
+<div class="check-card" id="card-principal">
+<div class="check-header" onclick="toggleCard('principal')"><input type="checkbox" id="chk-principal" onchange="toggleCard('principal')"><div><div style="font-weight:600">自有本金</div><div style="font-size:12px;color:var(--muted)">直接投入</div></div></div>
+<div class="check-body"><div class="form-group"><label class="form-label">金額（萬）</label><input type="number" class="form-input" id="principal-amt" value="300" oninput="calcFunding()"></div></div></div>
+
+<div class="check-card" id="card-mortgage">
+<div class="check-header" onclick="toggleCard('mortgage')"><input type="checkbox" id="chk-mortgage" onchange="toggleCard('mortgage')"><div><div style="font-weight:600">一般房貸</div><div style="font-size:12px;color:var(--muted)">本利攤還</div></div></div>
+<div class="check-body">
+<div class="form-row"><div class="form-group"><label class="form-label">金額（萬）</label><input type="number" class="form-input" id="mort-amt" value="500" oninput="calcFunding()"></div>
+<div class="form-group"><label class="form-label">年利率%</label><input type="number" class="form-input" id="mort-rate" value="1.85" step="0.01" oninput="calcFunding()"></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">期數（月）</label><input type="number" class="form-input" id="mort-months" value="84" oninput="calcFunding()"></div>
+<div class="form-group"><label class="form-label">寬限期</label><input type="number" class="form-input" id="mort-grace" value="0" oninput="calcFunding()"></div></div>
+<div class="result-row"><span class="label">每月本息</span><span class="val" id="mort-monthly">—</span></div>
+<div class="result-row"><span class="label">每年本息</span><span class="val" id="mort-yearly">—</span></div>
+</div></div>
+
+<div class="check-card" id="card-policy">
+<div class="check-header" onclick="toggleCard('policy')"><input type="checkbox" id="chk-policy" onchange="toggleCard('policy')"><div><div style="font-weight:600">保單質押</div></div></div>
+<div class="check-body">
+<div class="form-group"><label class="form-label">保價金（萬）</label><input type="number" class="form-input" id="pol-value" value="200" oninput="calcFunding()"></div>
+<div class="form-row"><div class="form-group"><label class="form-label">成數%</label><input type="number" class="form-input" id="pol-ratio" value="60" oninput="calcFunding()"></div>
+<div class="form-group"><label class="form-label">利率%</label><input type="number" class="form-input" id="pol-rate" value="3.8" step="0.01" oninput="calcFunding()"></div></div>
+<div class="result-row"><span class="label">可質借</span><span class="val" id="pol-loanable">—</span></div>
+<div class="result-row"><span class="label">月利息</span><span class="val" id="pol-monthly-int">—</span></div>
+<div class="result-row"><span class="label">年利息</span><span class="val" id="pol-yearly-int">—</span></div>
+</div></div>
+
+<div class="check-card" id="card-revolving">
+<div class="check-header" onclick="toggleCard('revolving')"><input type="checkbox" id="chk-revolving" onchange="toggleCard('revolving')"><div><div style="font-weight:600">循環→再質押</div><div style="font-size:12px;color:var(--muted)">利息疊加</div></div></div>
+<div class="check-body">
+<div class="form-group"><label class="form-label">動用（萬）</label><input type="number" class="form-input" id="rev-draw" value="200" oninput="calcFunding()"></div>
+<div class="form-row"><div class="form-group"><label class="form-label">循環利率%</label><input type="number" class="form-input" id="rev-rate" value="2.6" step="0.01" oninput="calcFunding()"></div>
+<div class="form-group"><label class="form-label">再質押成數%</label><input type="number" class="form-input" id="rev-repledge" value="60" oninput="calcFunding()"></div></div>
+<div class="form-group"><label class="form-label">再質押利率%</label><input type="number" class="form-input" id="rev-pol-rate" value="3.8" step="0.01" oninput="calcFunding()"></div>
+<div class="result-row"><span class="label">總月利息</span><span class="val" id="rev-total-int" style="color:var(--danger)">—</span></div>
+<div class="result-row"><span class="label">總年利息</span><span class="val" id="rev-total-int-y" style="color:var(--danger)">—</span></div>
+<div class="result-row"><span class="label">最終可用</span><span class="val" id="rev-total-cap">—</span></div>
+</div></div>
+
+<div class="card" style="background:#eff6ff">
+<div class="card-title">資金匯總</div>
+<div class="metric-grid">
+<div class="metric"><div class="value" id="sum-capital">0</div><div class="label">總可用（萬）</div></div>
+<div class="metric"><div class="value" id="sum-cost">0%</div><div class="label">加權成本</div></div>
+</div>
+<div class="result-row" style="margin-top:10px"><span class="label">每月總成本</span><span class="val" id="sum-monthly">—</span></div>
+<div class="result-row"><span class="label">每年總成本</span><span class="val" id="sum-yearly">—</span></div>
+</div>
+<button class="btn btn-primary" onclick="showPage('portfolio')">下一步：組合</button>
+</div></div>
+
+<div id="page-portfolio" class="page">
+<div class="header"><button onclick="showPage('funding')" style="background:none;border:none;font-size:20px;color:var(--primary)">←</button><h1>投資組合</h1><span></span></div>
+<div class="content">
+<div class="card"><div class="card-title">已選標的（示意）</div>
+<div class="result-row"><span>0056 元大高股息</span><span style="font-weight:600;color:var(--primary)">20%</span></div>
+<div class="result-row"><span>SPY</span><span style="font-weight:600;color:var(--primary)">25%</span></div>
+<div class="result-row"><span>HYG</span><span style="font-weight:600;color:var(--primary)">25%</span></div>
+<div class="result-row"><span>LQD</span><span style="font-weight:600;color:var(--primary)">15%</span></div>
+<div class="result-row"><span>0050</span><span style="font-weight:600;color:var(--primary)">15%</span></div>
+</div>
+<div class="alert alert-info">完整歷史回測請使用 <code>streamlit run app.py</code> 或 <code>python3 run_backtest.py</code></div>
+<button class="btn btn-primary" onclick="showPage('result')">查看結果示意</button>
+</div></div>
+
+<div id="page-result" class="page">
+<div class="header"><button onclick="showPage('portfolio')" style="background:none;border:none;font-size:20px;color:var(--primary)">←</button><h1>回測結果</h1><span></span></div>
+<div class="content">
+<div class="card"><div class="card-title">績效（示意）</div>
+<div class="metric-grid">
+<div class="metric"><div class="value">+106%</div><div class="label">含息總報酬</div></div>
+<div class="metric"><div class="value">9.5%</div><div class="label">CAGR</div></div>
+<div class="metric"><div class="value">-24%</div><div class="label">最大回撤</div></div>
+<div class="metric"><div class="value">0.91</div><div class="label">夏普</div></div>
+</div></div>
+<div class="card"><div class="card-title">配息</div>
+<div class="metric-grid">
+<div class="metric"><div class="value">5.7%</div><div class="label">年化配息</div></div>
+<div class="metric"><div class="value">5.9萬</div><div class="label">平均月配息</div></div>
+</div></div>
+<div class="section-title">斷頭警示</div>
+<div class="alert alert-danger">2020/03 保單質借水位達 103%（示意）</div>
+<button class="btn btn-secondary" onclick="showPage('cover')">回首頁</button>
+</div></div>
+
+<div class="bottom-nav" id="bottomNav" style="display:none">
+<button class="nav-item active" onclick="showPage('funding')"><span class="icon">💰</span>資金</button>
+<button class="nav-item" onclick="showPage('portfolio')"><span class="icon">📈</span>組合</button>
+<button class="nav-item" onclick="showPage('result')"><span class="icon">📋</span>結果</button>
+</div>
+
+<script>
+function showPage(id){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.getElementById('page-'+id).classList.add('active');
+const nav=document.getElementById('bottomNav');
+nav.style.display=id==='cover'?'none':'flex';
+if(id==='funding')calcFunding();
+window.scrollTo(0,0);
+}
+function toggleCard(id){
+const card=document.getElementById('card-'+id);
+const chk=document.getElementById('chk-'+id);
+if(event&&event.target.tagName!=='INPUT')chk.checked=!chk.checked;
+card.classList.toggle('active',chk.checked);
+calcFunding();
+}
+function calcFunding(){
+let total=0, monthly=0, wNum=0;
+if(document.getElementById('chk-principal').checked){
+const a=parseFloat(document.getElementById('principal-amt').value)||0;total+=a;
+}
+if(document.getElementById('chk-mortgage').checked){
+const P=(parseFloat(document.getElementById('mort-amt').value)||0)*10000;
+const rate=(parseFloat(document.getElementById('mort-rate').value)||0)/100;
+const n=parseInt(document.getElementById('mort-months').value)||1;
+const r=rate/12;
+const m=r===0?P/n:P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+document.getElementById('mort-monthly').textContent=Math.round(m).toLocaleString()+' 元';
+document.getElementById('mort-yearly').textContent=Math.round(m*12).toLocaleString()+' 元';
+total+=P/10000;monthly+=m;wNum+=(P/10000)*(rate*100);
+}else{document.getElementById('mort-monthly').textContent='—';document.getElementById('mort-yearly').textContent='—';}
+if(document.getElementById('chk-policy').checked){
+const v=parseFloat(document.getElementById('pol-value').value)||0;
+const ratio=(parseFloat(document.getElementById('pol-ratio').value)||0)/100;
+const rate=(parseFloat(document.getElementById('pol-rate').value)||0)/100;
+const loan=v*ratio;const mi=loan*10000*rate/12;
+document.getElementById('pol-loanable').textContent=loan.toFixed(1)+' 萬';
+document.getElementById('pol-monthly-int').textContent=Math.round(mi).toLocaleString()+' 元';
+document.getElementById('pol-yearly-int').textContent=Math.round(mi*12).toLocaleString()+' 元';
+total+=loan;monthly+=mi;wNum+=loan*(rate*100);
+}else{['pol-loanable','pol-monthly-int','pol-yearly-int'].forEach(id=>document.getElementById(id).textContent='—');}
+if(document.getElementById('chk-revolving').checked){
+const A=parseFloat(document.getElementById('rev-draw').value)||0;
+const rr=(parseFloat(document.getElementById('rev-rate').value)||0)/100;
+const rp=(parseFloat(document.getElementById('rev-repledge').value)||0)/100;
+const pr=(parseFloat(document.getElementById('rev-pol-rate').value)||0)/100;
+const i1=A*10000*rr/12;const B=A*rp;const i2=B*10000*pr/12;const ti=i1+i2;const tc=A+B;
+document.getElementById('rev-total-int').textContent=Math.round(ti).toLocaleString()+' 元';
+document.getElementById('rev-total-int-y').textContent=Math.round(ti*12).toLocaleString()+' 元';
+document.getElementById('rev-total-cap').textContent=tc.toFixed(1)+' 萬';
+total+=tc;monthly+=ti;
+const cr=tc>0?(ti*12/(tc*10000))*100:0;wNum+=tc*cr;
+}else{['rev-total-int','rev-total-int-y','rev-total-cap'].forEach(id=>document.getElementById(id).textContent='—');}
+document.getElementById('sum-capital').textContent=total.toFixed(1);
+document.getElementById('sum-cost').textContent=(total>0?wNum/total:0).toFixed(2)+'%';
+document.getElementById('sum-monthly').textContent=Math.round(monthly).toLocaleString()+' 元';
+document.getElementById('sum-yearly').textContent=Math.round(monthly*12).toLocaleString()+' 元';
+}
+</script>
+</body>
+</html>
